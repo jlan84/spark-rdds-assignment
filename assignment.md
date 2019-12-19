@@ -123,99 +123,31 @@ each cookie only costs $1).
 
 ## Part 3: Spark for Data Processing
 
-  We will now explore some airline data. The data are stored on S3 so you will need to get two things set up:
-   - put your AWS access key and secret access key in your `.bash_profile`
-   - start a notebook / script using the provided bash scripts to launch spark with the required packages to read data from S3
+  We will now explore some airline data. We will walk through the steps of doing this on a AWS EMR cluster but you can do it locally as well.  If you do it on the EMR you will want to place the data in an s3 bucket and make sure to give your EMR a IAM roll with access to s3. 
 
-### 3.0.1: Storing your AWS credentials
+  - [Read here](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-managed-notebooks.html) about EMR and how to set up a cluster and get a running notebook.
 
-  It's good practice to keep personal credentials stored in environment variables set in
-  your bash profile so that you don't have to hard code their values into your solutions.
-  This is particularly important when the code that uses your keys is stored on GitHub
-  since you don't want to be sharing your access keys with the world. To do this make
-  add the lines below to your bash profile.
+  - As you will be working in the cloud you will want to place your data into an s3 bucket. You can follow [these instructions](https://docs.aws.amazon.com/quickstarts/latest/s3backup/step-1-create-bucket.html).  The file can be found in your data folder.
 
-```bash
-export AWS_ACCESS_KEY_ID=YOUR ACCESS KEY
-export AWS_SECRET_ACCESS_KEY=YOUR SECRET ACCESS KEY
-```
-  If you lost your access keys or need to generate new ones, go to your AWS console, click your name in the upper right, and click "My Security Credentials" (or click [here](https://console.aws.amazon.com/iam/home?#/security_credential)) and then click "Continue to Security Credentials" if prompted. 
-
-
-  Keep in mind that if you ever have to change your keys you'll need to make sure that you
-  update your bash profile. Also, keep in mind that your environment does not update until
-  you start a new terminal  or type `source ~/.bash_profile`.
-  
-  After you set these variables, `aws configure list` should output something like the following:
-  
-```bash
-$ aws configure list
-      Name                    Value             Type    Location
-      ----                    -----             ----    --------
-   profile                <not set>             None    None
-access_key     ****************YENQ              env    
-secret_key     ****************Nzoe              env    
-    region                us-west-2      config-file    ~/.aws/config
-```
-
-  Note that the `Type` for `access_key` and `secret_key` is `env`. If you see something else in the Type column, or if you don't see the last four characters of the keys in the Value column, the keys are not configured correctly in your environment.
-
-### 3.0.2 Launching a notebook / script with the required spark packages
-
-Authenticated AWS S3 access is not built in to spark, but it is available with the right packages. We've written the following bash scripts, `jupyspark.sh` and `spark_submit_script.sh`, launch spark with these packages.
-
-
-#### Launching a notebook
-
-Type `bash scripts/jupyspark.sh` into your terminal (the contents of `jupyspark.sh` are displayed below). This launches a jupyter notebook server with the required packages.  Now whenever you create a notebook the ***spark session*** will *already be defined* in the variable `spark` and the ***spark context*** will *already be defined* as `sc`.
-
-```bash
-#!/bin/bash
-
-PYSPARK_DRIVER_PYTHON=jupyter
-PYSPARK_DRIVER_PYTHON_OPTS="notebook --NotebookApp.open_browser=True --NotebookApp.ip='localhost' --NotebookApp.port=8888"
-
-${SPARK_HOME}/bin/pyspark \
-    --master local[4] \
-    --executor-memory 1G \
-    --driver-memory 1G \
-    --conf spark.sql.warehouse.dir="file:///tmp/spark-warehouse" \
-    --packages com.databricks:spark-csv_2.11:1.5.0 \
-    --packages com.amazonaws:aws-java-sdk-pom:1.10.34 \
-    --packages org.apache.hadoop:hadoop-aws:2.7.3
-```
-
-#### Running a python script
-Say you've written all your code in `spark_intro.py`. To run it in the correct spark environment, type 
-
-```bash
-bash scripts/spark_submit_script.sh spark_intro.py
-```
-
-This bash script contains the same commands as `jupyspark.sh`, but uses the `spark-submit` driver instead of launching a notebook server. In the main block of `spark_intro.py`, we've already written the code that instantiates the `SparkSession` and `SparkContext` objects.
-
-
-
-Now you're ready to load up and explore the data all while becoming more familiar with Spark.
+  - Make sure you assign a IAM role with when creating the cluster so you have access to our data. [IAM Roles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html).  Make sure the role has `AmazonS3FullAccess`
 
 ### 3.1: Loading Data from an S3 bucket
   1\. Load the data from S3 as follows.
 
 ```python
-link = 's3a://mortar-example-data/airline-data'
+link = 's3a://<your_bucket_name>/airline-data-extract.csv'
 airline_rdd = sc.textFile(link)
 ```
 
-**Reminder**: Your AWS keys must be in your environment as `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` in order for this to work. The `s3a` client will *not* look for keys in the `~/.aws/credentials` file. Do *not* attempt to splice your keys into your URL using string formatting.
-
-**Note**: If you ever encounter an issue using your AWS credentials, and if you want to skip that at this point to save time on the assignment, you'll find an extract of that dataset (100 lines) in `data/airline-data-extract.csv`. You can use this extract to develop your complete pipeline and solve your issue later on. Use `airline_rdd = sc.textFile("data/airline-data-extract.csv")` to transform that extract into an RDD.
+**Reminder**: If you get an error make sure you have an IAM assigned that has s3 access.
 
 
 ---
 
 2\. Print the first 2 entries with `.take(2)` on `airline_rdd`. The first entry is the column names and starting with the second we have our data.
 
-3\. Now run `.count()` on the RDD. **This will take a while**, as the data set is a few million rows and it all must be downloaded from S3.
+3\. Now run `.count()` on the RDD. 
+
 
 ### 3.2: Create a pipeline on a sub-sample dataset
 
@@ -301,11 +233,4 @@ for a hint.
 You'll need to run all the transformations that you tested on the smaller dataset
 on the full data set to answer these questions.
 
-### 3.3: Assemble your pipeline and run it on the full scale dataset
 
-1\. In `spark_intro.py` you'll find a function `transformation_pipeline` you will implement by embedding all the transformations we've done so far, starting from question 3.2.2 (creating a clean rdd) to question 3.2.8 (finding answers to Q1, Q2, Q3, Q4). The function should return the 4 result lists to questions Q1, Q2, Q3, Q4 in a tuple.
-
-Then, run this function from the jupyter notebook or from the main section in `spark_intro.py` to test it on your sub-sample rdd. You should obtain the same answers you had previously obtained on a step by step basis.
-
-
-2\. Now run this pipeline on the full dataset, relax while the processing is done, and enjoy. You rock.
