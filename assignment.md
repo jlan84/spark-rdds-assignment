@@ -1,4 +1,7 @@
-## Part 1: RDD and Spark Basics
+# Spark RDDs
+
+## Basic
+### Part 1: RDD and Spark Basics
 
 Here we will get familiar with the basics of Spark via the Spark Python API,
 `pyspark` module in python. For now, we will be just working with a single node that will
@@ -72,7 +75,7 @@ file_rdd.collect()
 lst_rdd.collect()
 ```
 
-## Part 2: Intro to Functional Programming
+### Part 2: Intro to Functional Programming
 
 Spark operations fit within the [functional programming paradigm](https://en.wikipedia.org/wiki/Functional_programming).
 In terms of our RDD objects, this means that our RDD objects are immutable and that
@@ -121,7 +124,8 @@ each cookie only costs $1).
 * `rdd.values()` returns another RDD of all the values.
 * Use `.reduce()` to return the sum of all the values.
 
-## Part 3: Spark for Data Processing
+## Advanced
+### Part 3: Spark for Data Processing
 
   We will now explore some airline data. We will walk through the steps of doing this on a AWS EMR cluster but you can do it locally as well.  If you do it on the EMR you will want to place the data in an s3 bucket and make sure to give your EMR a IAM roll with access to s3. 
 
@@ -131,7 +135,7 @@ each cookie only costs $1).
 
   - Make sure you assign a IAM role with when creating the cluster so you have access to our data. [IAM Roles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html).  Make sure the role has `AmazonS3FullAccess`
 
-### 3.1: Loading Data from an S3 bucket
+#### 3.1: Loading Data from an S3 bucket
   1\. Load the data from S3 as follows.
 
 ```python
@@ -149,7 +153,7 @@ airline_rdd = sc.textFile(link)
 3\. Now run `.count()` on the RDD. 
 
 
-### 3.2: Create a pipeline on a sub-sample dataset
+#### 3.2: Create a pipeline on a sub-sample dataset
 
 Now we can move on to looking at the data and transforming it. In this section we will operate only on a limited data set, develop a full pipeline and later on execute that on the full scale data.
 
